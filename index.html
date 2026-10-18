@@ -503,7 +503,7 @@ const TASKS=STEPS.map((x,k)=>x.k==='task'?k:-1).filter(k=>k>=0);
 const BG=[['🧭','مستكشف الرقعة'],['🧩','مرتّب الرقعة'],['🏰','حارس الرخ'],['🦉','سيّد الأقطار'],['👑','ملكة القوة'],['🐴','فارس القفزات'],['🤴','حامي الملك'],['🛡️','بيدق الشجاعة']];
 const BC=['#4ADE80','#FB923C','#C084FC','#38BDF8','#F472B6','#FACC15','#FFD700','#F87171'];
 const ENC=['لا بأس، جرّب مرة أخرى! 💪','قريب جداً! حاول ثانية 🌟','أنت بطل ولا تستسلم! 🦸','المحاولة جزء من التعلّم 🌈'];
-const BASE='https://claude.ai/artifact/CEs2HhQH6bCL2c8PVx2tFf'; // رابط المنصة المنشور (يُستخدم عند توليد الروابط)
+const BASE=(/^https?:$/.test(location.protocol)&&!/(^|\.)claude\.ai$/.test(location.hostname))?location.href.split(/[?#]/)[0]:'https://claude.ai/artifact/CEs2HhQH6bCL2c8PVx2tFf'; // رابط المنصة المنشور (يُستخدم عند توليد الروابط)
 const SHEET_URL='https://script.google.com/macros/s/AKfycbwm0O1mACE1-fP2_FFKnFkmqCV3Eg2CVHjjfoK5fcw4pfEZEaFzSuEHfLLoIbjSd6c/exec'; // رابط Google Apps Script (Web app) لمتابعة تقدّم الطلاب
 const ACADEMY_CODE='4719'; // كود المدرب/الأكاديمية للدخول إلى منطقة أولياء الأمور (غيّره كما تشاء)
 const nd=t=>t.replace(/[\u0660-\u0669]/g,d=>d.charCodeAt(0)-1632).replace(/[\u06F0-\u06F9]/g,d=>d.charCodeAt(0)-1776); // تحويل الأرقام العربية إلى إنجليزية
@@ -788,7 +788,7 @@ function Step({s,onDone,locked,cb,coach,onBd,feed}){
    </div>}
   </div>
   {vd&&s.vid&&<PieceVideo k={s.vid} onClose={()=>setVd(false)}/>}
-  {win>0&&<div className="modal"><Confetti/><div><div style={{fontSize:56}}>🏆</div><h2>أحسنت يا بطل!</h2><div className="big">{[0,1,2].map(i=>i<win?'★':'☆')}</div><p>أنجزت المهمة بنجاح!</p><button className="btn" onClick={()=>{onDone(win);if(locked)setWin(-1)}}>{locked?'تمام ✔':'التالي ➜'}</button></div></div>}
+  {win>0&&<div className="modal"><Confetti/><div><div style={{fontSize:56}}>🏆</div><h2>أحسنت يا بطل!</h2><div className="big">{[0,1,2].map(i=>i<win?'★':'☆')}</div><p>أنجزت المهمة بنجاح!</p><button className="btn" onClick={()=>{const r=onDone(win);if(locked||r===false)setWin(-1)}}>{locked?'تمام ✔':'التالي ➜'}</button></div></div>}
   {snap&&<div className="modal" style={{zIndex:30}} onClick={()=>setSnap(null)}><div className="drawer" onClick={e=>e.stopPropagation()}><h2 style={{margin:'0 0 8px'}}>📸 صورة الرقعة</h2><img src={snap} alt="صورة الرقعة" style={{width:'100%',borderRadius:14}}/><p style={{fontSize:14,margin:'8px 0'}}>اضغط مطولاً على الصورة لحفظها ثم أرسلها عبر الواتساب 📲</p><div><button className="btn alt" onClick={async()=>{try{const f=new File([dataToBlob(snap)],'chess-board.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]})}catch(e){}}}>📤 مشاركة</button><button className="btn" onClick={()=>setSnap(null)}>إغلاق</button></div></div></div>}
  </div>)
 }
@@ -934,25 +934,28 @@ function App(){
  [role,setRole]=useState(()=>{const v=LS.get('role','');return v==='coach'||v==='student'?v:(LS.get('reg',false)===true?'student':'')}),
  [cn,setCn]=useState(()=>{const v=LS.get('cn','');return typeof v==='string'?v.slice(0,30):''}),
  [hi,setHi]=useState(()=>{const h=LS.get('hi',null);if(Number.isInteger(h)&&h>=0&&h<LN.length)return h;const st=STEPS[Math.min(Math.max(+LS.get('i',0)||0,0),STEPS.length-1)];return st?st.L:0}),
- [grp,setGrp]=useState(()=>{const v=LS.get('grp','');return typeof v==='string'?v.slice(0,20):''}),[st,setSt]=useState({cfg:null,stu:{}}),[rs,setRs]=useState(false),[pt,setPt]=useState(''),[pm,setPm]=useState(''),[rv,setRv]=useState(0),[lockMsg,setLockMsg]=useState(''),[tg,setTg]=useState(COACHES[0].n),[img,setImg]=useState(null);
+ [grp,setGrp]=useState(()=>{const v=LS.get('grp','');return typeof v==='string'?v.slice(0,20):''}),[st,setSt]=useState({cfg:null,stu:{}}),[rs,setRs]=useState(false),[pt,setPt]=useState(''),[pm,setPm]=useState(''),[rv,setRv]=useState(0),[lockMsg,setLockMsg]=useState(''),[tg,setTg]=useState(COACHES[0].n),[img,setImg]=useState(null),[cgs,setCgs]=useState(()=>{const v=LS.get('cgs',[]);return Array.isArray(v)?v.filter(g=>g&&typeof g.c==='string').slice(0,30):[]}),[gm,setGm]=useState(false),[ngn,setNgn]=useState('');
  React.useEffect(()=>{LS.set('i',i);LS.set('tot',tot);LS.set('pset',ps);LS.set('bt',bt);LS.set('dn',dn);LS.set('seen',seen);LS.set('nm',nm);LS.set('ph',ph);LS.set('reg',reg);LS.set('pin',pin.length===4?pin:'');LS.set('role',role);LS.set('cn',cn);LS.set('hi',hi);LS.set('grp',grp)},[i,tot,ps,bt,dn,seen,nm,ph,reg,pin,role,cn,hi,grp]);
  const s=STEPS[i];
  const [lv,setLv]=useState(false);
- const lockK=k=>role!=='coach'&&k>hi;
- const lockWarn=()=>{setLockMsg('🔒 أتمم مهام الدرس الحالي أولاً لتفتح هذا الدرس!');setTimeout(()=>setLockMsg(''),2500)};
+  const lockWarn=k=>{setLockMsg(gated&&k>ml?'🔒 هذا الدرس سيُفتح عندما يبدأه المدرب 👨‍🏫':'🔒 أتمم مهام الدرس الحالي أولاً لتفتح هذا الدرس!');setTimeout(()=>setLockMsg(''),3000)};
  const lc=k=>TASKS.filter(t=>STEPS[t].L===k).every(t=>dn.includes(t));
  const earned=LN.map((_,k)=>lc(k));
  React.useEffect(()=>{const k=earned.findIndex((e,k)=>e&&!seen.includes(k));if(!VIEW&&k>=0&&nb===null)setNb(k)},[dn,seen]);
  const pct=Math.round(dn.length/TASKS.length*100),nDone=earned.filter(Boolean).length;
  React.useEffect(()=>{if(!SHEET_URL||role!=='student'||!reg||!nm.trim())return;const t=setTimeout(()=>{try{fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({n:nm.trim(),ph,pct,lesson:s?s.L+1:LN.length,stars:tot,b:nDone,tasks:dn.length})}).catch(()=>{})}catch(e){}},1500);return()=>clearTimeout(t)},[nm,ph,pct,tot,nDone,dn,role,reg,i]);
- const cfg=st.cfg||{},locked=role==='student'&&!VIEW&&reg&&!!grp&&!!RT.mode&&cfg.lk!==false&&Number.isInteger(cfg.i)&&!cfg.hwo,cfgLk=cfg.lk!==false;
+ const cfg=st.cfg||{},locked=role==='student'&&!VIEW&&reg&&!!grp&&!!RT.mode&&cfg.lk!==false&&Number.isInteger(cfg.i)&&!cfg.hwo,cfgLk=cfg.lk!==false,gated=role==='student'&&!VIEW&&reg&&!!grp&&!!RT.mode,ml=Math.max(0,Number.isInteger(cfg.ml)?cfg.ml:(Number.isInteger(cfg.i)&&STEPS[cfg.i]?STEPS[cfg.i].L:0)),lockK=k=>role!=='coach'&&(k>hi||(gated&&k>ml)),gname=((cgs.find(g=>g.c===grp))||{}).n||'',gn0=(role==='coach'?gname:cfg.gn)||'';
  const hw=(Array.isArray(cfg.hw)?cfg.hw:Object.values(cfg.hw||{})).filter(t=>Number.isInteger(t)&&STEPS[t]&&STEPS[t].k==='task'),hwDone=hw.filter(t=>dn.includes(t)).length,
   setHw=a=>{if(RT.mode&&grp)RT.cfg(grp,{hw:a})};
   React.useEffect(()=>{if(!reg||!grp||!RT.mode||VIEW||!role)return;setSt({cfg:null,stu:{}});const off=RT.watch(grp,setSt),bt=()=>{if(role==='student'&&nm)RT.beat(grp,nm)};bt();const h=setInterval(bt,45000);
    if(role==='student'&&nm&&s)LIVE.send({i,fen:s.fen,h:[],m:0,st:'view',now:1});
    return()=>{off();clearInterval(h);if(role==='student'&&nm)RT.beat(grp,nm,1)}},[reg,grp,role,nm]);
   React.useEffect(()=>{if(role==='coach'&&reg&&!grp)setGrp(genCode())},[role,reg,grp]);
-  React.useEffect(()=>{if(role==='coach'&&reg&&grp&&RT.mode)RT.cfg(grp,{i,ar:[],an:false})},[role,reg,grp,i]);
+  React.useEffect(()=>{if(role==='coach'&&reg&&grp&&RT.mode&&st.cfg)RT.cfg(grp,{i,ar:[],an:false,gn:gname})},[role,reg,grp,i,!!st.cfg,gname]);
+   React.useEffect(()=>{if(role==='coach'&&reg&&grp&&RT.mode&&st.cfg&&!st.cfg.hwo&&s){const cur=Number.isInteger(st.cfg.ml)?st.cfg.ml:-1;if(s.L>cur)RT.cfg(grp,{ml:s.L})}},[role,reg,grp,i,st.cfg&&st.cfg.ml,st.cfg&&st.cfg.hwo,!!st.cfg]);
+   React.useEffect(()=>{if(locked&&s&&s.L>hi)setHi(s.L)},[locked,i]);
+   React.useEffect(()=>{if(role==='coach'&&reg&&grp&&!cgs.some(g=>g.c===grp))setCgs(a=>[...a,{c:grp,n:a.length?'جروب '+(a.length+1):'الجروب الرئيسي'}])},[role,reg,grp]);
+   React.useEffect(()=>{LS.set('cgs',cgs)},[cgs]);
   React.useEffect(()=>{if(locked&&cfg.i!==i&&cfg.i>=0&&cfg.i<=STEPS.length)setI(cfg.i)},[locked,cfg.i,i]);
   React.useEffect(()=>{if(role!=='student'||!reg||!grp||!nm.trim()||!RT.mode)return;const t=setTimeout(()=>RT.put(grp,nm.trim(),null,{pc:pct,tot,tn:dn.length,L:s?s.L+1:LN.length}),1200);return()=>clearTimeout(t)},[grp,nm,pct,tot,dn,role,reg]);
 const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Google Sheets بعد');setPm('⏳ جارٍ التحديث...');try{const r=await fetch(SHEET_URL+'?code='+encodeURIComponent(ACADEMY_CODE)),j=await r.json();if(!j.rows)throw 0;j.rows.forEach(x=>ROS.put({n:String(x.n).slice(0,40),pct:+x.pct||0,lesson:Math.min(LN.length,Math.max(1,+x.lesson||1)),stars:+x.stars||0,b:+x.b||0,t:+x.t||Date.now()}));setPm('✅ تم تحديث '+j.rows.length+' طالب من Google Sheets');setRv(v=>v+1)}catch(e){setPm('❌ تعذّر الاتصال بالشيت')}};
@@ -996,7 +999,7 @@ const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Go
   {lb&&!VIEW&&<><div className="mnbk" onClick={()=>setLb(false)}/><div className="mnu">
    <h3>🗂️ مكتبتي</h3>
    <div style={{textAlign:'center'}}><button className="btn" style={{margin:'4px 0'}} onClick={()=>{setLb(false);setAch(true)}}>🏅 إنجازاتي ({nDone}/{LN.length})</button>
-   {role==='coach'&&<button className="btn alt" style={{margin:'4px 0'}} onClick={()=>{setLb(false);setCl(true)}}>📋 كل المواقف ({TASKS.length})</button>}{role==='coach'&&<button className={'btn'+(cfgLk?'':' alt')} style={{margin:'4px 0'}} onClick={()=>RT.mode&&grp&&RT.cfg(grp,{lk:!cfgLk})}>{cfgLk?'🔒 المتدربون مقفولون على تمريني':'🔓 المتدربون يتنقلون بحرية'}</button>}{role==='coach'&&<button className={'btn'+(cfg.hwo?'':' alt')} style={{margin:'4px 0'}} onClick={()=>RT.mode&&grp&&RT.cfg(grp,{hwo:!cfg.hwo})}>{cfg.hwo?'🏁 الواجب مفتوح للمتدربين (اضغط للإغلاق)':'🏁 إنهاء الحصة وفتح الواجب'}</button>}{role==='student'&&<button className="btn alt" style={{margin:'4px 0'}} onClick={()=>{setLb(false);setHwm(true)}}>📝 واجبي ({hwDone}/{hw.length})</button>}</div></div></>}
+   {role==='coach'&&<button className="btn alt" style={{margin:'4px 0'}} onClick={()=>{setLb(false);setCl(true)}}>📋 كل المواقف ({TASKS.length})</button>}{role==='coach'&&<button className={'btn'+(cfgLk?'':' alt')} style={{margin:'4px 0'}} onClick={()=>RT.mode&&grp&&RT.cfg(grp,{lk:!cfgLk})}>{cfgLk?'🔒 المتدربون مقفولون على تمريني':'🔓 المتدربون يتنقلون بحرية'}</button>}{role==='coach'&&<button className={'btn'+(cfg.hwo?'':' alt')} style={{margin:'4px 0'}} onClick={()=>RT.mode&&grp&&RT.cfg(grp,{hwo:!cfg.hwo})}>{cfg.hwo?'🎬 بدء حصة جديدة (قفل الواجب)':'🏁 إنهاء الحصة وفتح الواجب'}</button>}{role==='coach'&&grp&&<div style={{margin:'8px 0',fontWeight:800,fontSize:14}}>📚 الدروس المفتوحة للمتدربين: {ml+1} / {LN.length}<div><button className="chip" onClick={()=>RT.mode&&RT.cfg(grp,{ml:Math.max(0,ml-1)})}>➖ قفل آخر درس</button><button className="chip" onClick={()=>RT.mode&&RT.cfg(grp,{ml:Math.min(LN.length-1,ml+1)})}>➕ فتح الدرس التالي</button></div></div>}{role==='student'&&<button className="btn alt" style={{margin:'4px 0'}} onClick={()=>{setLb(false);setHwm(true)}}>📝 الواجب والمهام ({hwDone}/{hw.length})</button>}</div></div></>}
   {mn&&!VIEW&&<><div className="mnbk" onClick={()=>setMn(false)}/><div className="mnu">
    {reg&&grp&&<><h3>🔑 كود الحصة</h3><div style={{textAlign:'center',fontSize:30,fontWeight:900,letterSpacing:5,direction:'ltr',margin:'2px 0 6px'}}>{grp}</div>{role==='coach'&&<div style={{textAlign:'center'}}><button className="btn alt" style={{margin:'0 0 8px'}} onClick={()=>{setMn(false);setShr({ok:null})}}>📤 مشاركة الرابط والكود</button></div>}</>}
    <h3>♟ شكل القطع</h3>
@@ -1007,15 +1010,15 @@ const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Go
   </header>
   {VIEW?<ViewReport/>:<>
   {reg&&(role==='coach'?<div className="hello">مرحباً كابتن{cn?' '+cn:''} 👨‍🏫 · وضع المدرب</div>:first&&<div className="hello">مرحباً يا بطل، {first}! 🎉</div>)}
-  {reg&&<div style={{textAlign:'center',fontSize:12,opacity:.85}}>{!grp?'⚪ حدّد كود الحصة':RT.mode?'🟢 مزامنة مباشرة · كود الحصة: '+grp:'⚪ بدون مزامنة (اضبط FIREBASE_CONFIG)'}</div>}
-<div className="chips">{role==='coach'&&grp&&<button className="chip on" onClick={()=>setShr({ok:null})}>📤 مشاركة الرابط والكود</button>}</div>
+  {reg&&<div style={{textAlign:'center',fontSize:12,opacity:.85}}>{!grp?'⚪ حدّد كود الحصة':RT.mode?'🟢 مزامنة مباشرة · '+(gn0?gn0+' · ':'')+'كود الحصة: '+grp+(cfg.hwo?' · 🏁 وضع الواجب':''):'⚪ بدون مزامنة (اضبط FIREBASE_CONFIG)'}</div>}
+<div className="chips">{role==='coach'&&grp&&<><button className="chip on" onClick={()=>setShr({ok:null})}>📤 مشاركة الرابط والكود</button><button className="chip on" onClick={()=>setGm(true)}>👥 جروباتي</button><button className="chip on" onClick={()=>RT.mode&&RT.cfg(grp,{hwo:!cfg.hwo})}>{cfg.hwo?'🎬 بدء حصة جديدة':'🏁 إنهاء الحصة وفتح الواجب'}</button></>}</div>
     <div className="bar"><i style={{width:(i/STEPS.length*100)+'%'}}/></div>
-  {s&&!locked&&<div className="chips" style={{marginBottom:10}}>{LN.map((n,k)=><span key={k} onClick={()=>lockK(k)?lockWarn():setI(STEPS.findIndex(x=>x.L===k))} className={'chip'+(s.L===k?' on':'')+(lockK(k)?' lockc':'')}>{lockK(k)?'🔒 ':''}الدرس {k+1} · {n}</span>)}</div>}
-  {s&&!locked&&<div className="chips"><button className="btn" onClick={()=>setI(Math.max(0,i-1))}>⬅ السابق</button><button className="btn alt" onClick={()=>{const nx=STEPS[i+1];if(nx&&lockK(nx.L))lockWarn();else setI(i+1)}}>تخطّي ➡</button></div>}
+  {s&&!locked&&<div className="chips" style={{marginBottom:10}}>{LN.map((n,k)=><span key={k} onClick={()=>lockK(k)?lockWarn(k):setI(STEPS.findIndex(x=>x.L===k))} className={'chip'+(s.L===k?' on':'')+(lockK(k)?' lockc':'')}>{lockK(k)?'🔒 ':''}الدرس {k+1} · {n}</span>)}</div>}
+  {s&&!locked&&<div className="chips"><button className="btn" onClick={()=>setI(Math.max(0,i-1))}>⬅ السابق</button><button className="btn alt" onClick={()=>{const nx=STEPS[i+1];if(nx&&lockK(nx.L))lockWarn(nx.L);else setI(i+1)}}>تخطّي ➡</button></div>}
   {locked&&<div className="hello" style={{fontSize:14}}>🔒 المدرب هو من يتحكم في التمرين المعروض</div>}
   {role==='student'&&reg&&hw.length>0&&<div className="hello" style={{fontSize:14,cursor:'pointer'}} onClick={()=>setHwm(true)}>📝 عندك واجب ({hwDone}/{hw.length}) — اضغط لفتحه</div>}
 {lockMsg&&<div className="hello" style={{fontSize:15,color:'#e11d48'}}>{lockMsg}</div>}
-  {s?<Step key={i} s={s} locked={locked} cb={cfg} coach={role==='coach'} feed={st.stu} onBd={o=>{if(RT.mode&&grp)RT.cfg(grp,{i,...o})}} onDone={st=>{setTot(t=>t+st);if(s.k==='task'&&st>0)setDn(d=>d.includes(i)?d:[...d,i]);{const nx=STEPS[i+1];if(nx&&nx.L>hi)setHi(nx.L)}if(!locked)setI(i+1)}}/>:
+  {s?<Step key={i} s={s} locked={locked} cb={cfg} coach={role==='coach'} feed={st.stu} onBd={o=>{if(RT.mode&&grp)RT.cfg(grp,{i,...o})}} onDone={st=>{setTot(t=>t+st);if(s.k==='task'&&st>0)setDn(d=>d.includes(i)?d:[...d,i]);{const nx=STEPS[i+1];if(nx&&gated&&nx.L>ml){if(!locked){setLockMsg('🔒 أحسنت! خلّصت الدروس المفتوحة. الدرس الجديد يفتحه المدرب في الحصة القادمة 👨‍🏫');setTimeout(()=>setLockMsg(''),7000)}return false}if(nx&&nx.L>hi)setHi(nx.L)}if(!locked)setI(i+1)}}/>:
    <div className="card" style={{textAlign:'center'}}><Confetti/><div style={{fontSize:70}}>🎓</div><h2>أنهيت المستوى التأسيسي!</h2><div className="big">⭐ {tot}</div><p>تعلّمت الـ <span className="en">Chessboard</span> والـ <span className="en">Pawn</span> والـ <span className="en">Rook</span> والـ <span className="en">Bishop</span> والـ <span className="en">Queen</span> والـ <span className="en">Knight</span> والـ <span className="en">King</span>. أنت بطل حقيقي!</p><button className="btn" onClick={()=>{setI(0);setTot(0);setDn([]);setSeen([]);setHi(0)}}>🔄 ابدأ من جديد</button></div>}
  </>}
   {role==='coach'&&!reg&&!VIEW&&<div className="modal" style={{zIndex:20,background:'rgba(20,20,40,.82)'}}><div className="drawer" style={{position:'relative'}}><button type="button" title="دخول المتدرب" aria-label="دخول المتدرب" onClick={()=>setRole('student')} style={{position:'absolute',top:10,insetInlineEnd:10,width:38,height:38,borderRadius:'50%',border:'1px solid rgba(128,128,128,.5)',background:'var(--soft)',color:'var(--ink)',fontSize:18,cursor:'pointer',opacity:.8,padding:0}}>🎓</button>
@@ -1034,11 +1037,11 @@ const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Go
     if(nm0.length<2)return setOb({...ob,err:'اكتب اسمك'});if(nc(ob.sc).length<2)return setOb({...ob,err:'اكتب كود الحصة'});
     if(d&&(d.length<8||d.length>15))return setOb({...ob,err:'رقم الواتساب غير صحيح'});
     setNm(nm0);setPh(d||ph);setGrp(nc(ob.sc));setRole('student');setReg(true)}}>ابدأ المغامرة 🚀</button></div></div>}
-  {shr&&role==='coach'&&grp&&(()=>{const u=BASE+'?'+qs({code:grp}),msg='♟️ أهلاً بك في Breakthrough Chess Academy!\nادخل على الرابط واكتب اسمك:\n'+u+'\n\n🔑 كود الحصة: '+grp,
+  {shr&&role==='coach'&&grp&&(()=>{const u=BASE+'?'+qs({code:grp}),msg='♟️ أهلاً بك في Breakthrough Chess Academy!'+(gname?'\n👥 '+gname:'')+'\nادخل على الرابط واكتب اسمك:\n'+u+'\n\n🔑 كود الحصة: '+grp,
    doCopy=t=>{const done=ok=>setShr({ok});try{navigator.clipboard.writeText(t).then(()=>done(true),()=>done(false))}catch(e){done(false)}},
    doShare=async()=>{try{if(navigator.share)await navigator.share({title:'حصة الشطرنج',text:msg});else doCopy(msg)}catch(e){}};
    return <div className="modal" style={{zIndex:30}} onClick={()=>setShr(null)}><div className="drawer" onClick={e=>e.stopPropagation()}>
-   <h2 style={{margin:'0 0 8px'}}>📤 مشاركة الحصة</h2>
+   <h2 style={{margin:'0 0 8px'}}>📤 مشاركة {gname||'الحصة'}</h2><p style={{fontSize:13,margin:'0 0 8px',opacity:.85}}>الرابط شغّال بعد الحصة كمان: المتدرب يدخل ويحلّ الواجب والدروس المفتوحة بس 👍</p>
    <p style={{margin:'0 0 4px',fontWeight:800}}>🔑 كود الحصة</p>
    <div style={{fontSize:40,fontWeight:900,letterSpacing:6,direction:'ltr',margin:'0 0 8px'}}>{grp}</div>
    <p style={{margin:'0 0 4px',fontWeight:800}}>🔗 رابط الدخول (الكود داخله تلقائيًا)</p>
@@ -1049,7 +1052,13 @@ const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Go
    <button className="btn alt" onClick={()=>doCopy(u)}>🔗 نسخ الرابط فقط</button>
    {navigator.share&&<button className="btn alt" onClick={doShare}>📲 مشاركة...</button>}
    <button className="btn" onClick={()=>setShr(null)}>إغلاق</button></div></div></div>})()}
-  {img&&<div className="modal" style={{zIndex:30}} onClick={()=>setImg(null)}><div className="drawer" onClick={e=>e.stopPropagation()}>
+  {gm&&role==='coach'&&<div className="modal" style={{zIndex:30}} onClick={()=>setGm(false)}><div className="drawer" style={{textAlign:'right'}} onClick={e=>e.stopPropagation()}>
+    <h2 style={{margin:'0 0 4px',textAlign:'center'}}>👥 جروباتي</h2>
+    <p style={{fontSize:13,margin:'0 0 8px',textAlign:'center',opacity:.85}}>لكل جروب كود ورابط. ابعته للمتدربين عشان يدخلوا حتى بعد الحصة 📲</p>
+    {cgs.map(g=><div key={g.c} style={{display:'flex',gap:6,alignItems:'center'}}><button className={'lrow'+(g.c===grp?' on':'')} style={{flex:1}} onClick={()=>{setGrp(g.c);setGm(false)}}><span>{g.c===grp?'✅':'⭕'}</span><span style={{flex:1,textAlign:'right'}}>{g.n}</span><span className="en">{g.c}</span></button><button className="chip" aria-label="إرسال الرابط" onClick={()=>{setGrp(g.c);setGm(false);setShr({ok:null})}}>📤</button><button className="chip" aria-label="حذف من القائمة" onClick={()=>{if(window.confirm('حذف الجروب «'+g.n+'» من قائمتك؟')){setCgs(a=>a.filter(x=>x.c!==g.c));if(g.c===grp){const o=cgs.find(x=>x.c!==g.c);setGrp(o?o.c:genCode())}}}}>🗑</button></div>)}
+    <input className="pin nm" style={{marginTop:10}} placeholder="اسم الجروب الجديد (مثال: سبت 5م)" value={ngn} maxLength={30} onChange={e=>setNgn(e.target.value)}/>
+    <div style={{textAlign:'center'}}><button className="btn" onClick={()=>{const n=ngn.trim()||'جروب '+(cgs.length+1),c=genCode();setCgs(a=>[...a,{c,n}]);setGrp(c);setNgn('');setGm(false);setShr({ok:null})}}>➕ إنشاء جروب وإرسال الرابط</button><button className="btn alt" onClick={()=>setGm(false)}>إغلاق</button></div></div></div>}
+   {img&&<div className="modal" style={{zIndex:30}} onClick={()=>setImg(null)}><div className="drawer" onClick={e=>e.stopPropagation()}>
    <h2 style={{margin:'0 0 8px'}}>🖼️ تقرير الإنجازات</h2>
    <img src={img} alt="تقرير الإنجازات" style={{width:'100%',borderRadius:16,boxShadow:'0 4px 14px rgba(0,0,0,.15)'}}/>
    <p style={{fontSize:14,margin:'8px 0'}}>اضغط مطولاً على الصورة لحفظها، ثم أرسلها عبر الواتساب 📲</p>
@@ -1067,10 +1076,13 @@ const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Go
    <p style={{fontSize:11,opacity:.65,textAlign:'center',margin:'8px 0 0'}}>القائمة تُحفظ على جهاز المدرب فقط. عند فتح رابط متابعة وأنت مسجّل كمدرب يُضاف الطالب تلقائياً.</p>
    <div style={{textAlign:'center'}}><button className="btn" onClick={()=>setRs(false)}>إغلاق</button></div></div></div>}
   {hwm&&role==='student'&&<div className="modal" onClick={()=>setHwm(false)}><div className="drawer" style={{textAlign:'right'}} onClick={e=>e.stopPropagation()}>
-   <h2 style={{margin:'0 0 4px',textAlign:'center'}}>📝 واجبي</h2>
+   <h2 style={{margin:'0 0 4px',textAlign:'center'}}>📝 الواجب والمهام</h2>
    {hw.length===0?<p style={{textAlign:'center',opacity:.8}}>لا يوجد واجب حالياً 🎉</p>:<><p style={{fontSize:13,margin:'0 0 6px',textAlign:'center',opacity:.8}}>{hwDone} / {hw.length} مهام محلولة{locked?' · 🔒 يُفتح الواجب بعد انتهاء الحصة':''}</p>
    {hw.map(t=><button key={t} className="lrow" disabled={locked} style={locked?{opacity:.55}:null} onClick={()=>{setI(t);setHwm(false)}}><span>{dn.includes(t)?'✅':'⭕'}</span><span className="en" style={{minWidth:70}}>{LN[STEPS[t].L]}</span><span style={{flex:1,textAlign:'right'}}>{STEPS[t].t}</span></button>)}</>}
-   <div style={{textAlign:'center'}}><button className="btn alt" onClick={()=>setHwm(false)}>إغلاق</button></div></div></div>}
+   <h3 style={{margin:'12px 0 4px',fontSize:15,textAlign:'center'}}>📚 مهام الدروس المفتوحة</h3>
+    {LN.map((n,k)=>{if(lockK(k))return null;const ts=TASKS.filter(t=>STEPS[t].L===k);if(!ts.length)return null;const d2=ts.filter(t=>dn.includes(t)).length,nx=ts.find(t=>!dn.includes(t));return <button key={'ls'+k} className="lrow" disabled={locked} style={locked?{opacity:.55}:null} onClick={()=>{setI(nx!==undefined?nx:ts[0]);setHwm(false)}}><span>{d2===ts.length?'✅':'▶️'}</span><span className="en" style={{minWidth:70}}>{n}</span><span style={{flex:1,textAlign:'right'}}>مهام الدرس {k+1} ({d2}/{ts.length})</span></button>})}
+    {gated&&<p style={{fontSize:12,textAlign:'center',opacity:.8,margin:'6px 0'}}>🔒 الدروس الجديدة تُفتح عندما يبدأها المدرب</p>}
+    <div style={{textAlign:'center'}}><button className="btn alt" onClick={()=>setHwm(false)}>إغلاق</button></div></div></div>}
   {cl&&role==='coach'&&<div className="modal" onClick={()=>setCl(false)}><div className="drawer" style={{textAlign:'right'}} onClick={e=>e.stopPropagation()}><h2 style={{margin:'0 0 4px',textAlign:'center'}}>📋 كل المواقف</h2><p style={{fontSize:13,margin:'0 0 6px',textAlign:'center',opacity:.8}}>اضغط على أي موقف لفتحه · 🆕 = موقف جديد · ✅ = محلول</p><p style={{fontSize:13,margin:'0 0 6px',textAlign:'center',fontWeight:800}}>📝 اضغط على الزرار اللي بجانب الموقف لإضافته للواجب (المختار: {hw.length}){hw.length>0&&<> · <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>setHw([])}>مسح الكل</span></>}{!RT.mode&&<><br/>⚠️ المزامنة غير مفعّلة، الواجب لن يصل للمتدربين</>}</p>
    {LN.map((n,k)=><div key={k}><h3 style={{margin:'10px 0 2px',fontSize:15}}>الدرس {k+1} · <span className="en">{n}</span> ({TASKS.filter(t=>STEPS[t].L===k).length})</h3>{TASKS.filter(t=>STEPS[t].L===k).map(t=><div key={t} style={{display:'flex',gap:6,alignItems:'center'}}><button className={'lrow'+(i===t?' on':'')} style={{flex:1}} onClick={()=>{setI(t);setCl(false)}}><span>{dn.includes(t)?'✅':ISNEW[t]?'🆕':'⭕'}</span><span style={{flex:1,textAlign:'right'}}>{STEPS[t].t}</span></button><button className={'chip'+(hw.includes(t)?' on':'')} aria-label="إضافة للواجب" onClick={()=>setHw(hw.includes(t)?hw.filter(x=>x!==t):[...hw,t].sort((a,b)=>a-b))}>{hw.includes(t)?'📝 ✓':'📝'}</button></div>)}</div>)}
    <div style={{textAlign:'center'}}><button className="btn alt" onClick={()=>setCl(false)}>إغلاق</button></div></div></div>}
@@ -1078,7 +1090,7 @@ const syncRos=async()=>{if(!SHEET_URL)return setPm('⚠️ لم يتم ربط Go
    <div className="bgrid">{BG.map((b,k)=><div key={k} className={'bdg'+(earned[k]?' on':'')} style={{'--c':BC[k]}}><div className="bi">{earned[k]?b[0]:'🔒'}</div><b>{b[1]}</b><span className="en">{LN[k]}</span></div>)}</div>
    <button className="btn alt" onClick={()=>setAch(false)}>إغلاق</button></div></div>}
   {nb!==null&&<div className="modal"><Confetti/><div className="drawer"><div style={{fontWeight:800}}>🎉 وسام جديد!</div><div className="bdg on big1" style={{'--c':BC[nb]}}><div className="bi spin">{BG[nb][0]}</div></div><h2 style={{margin:'4px 0'}}>{BG[nb][1]}</h2><p style={{margin:'4px 0'}}>أتممت درس <span className="en">{LN[nb]}</span> بنجاح!</p><div><a className="btn alt" style={{display:'inline-block',textDecoration:'none'}} href={waCong(nb)} target="_blank" rel="noopener noreferrer">📲 أرسل التهنئة عبر الواتساب</a></div><button className="btn" onClick={()=>{setSeen(x=>[...x,nb]);setNb(null)}}>رائع! ➜</button></div></div>}
-  {dr&&<div className="modal" onClick={()=>setDr(false)}><div className="drawer" onClick={e=>e.stopPropagation()}><h2 style={{margin:'0 0 4px'}}>اختر الدرس 📚</h2><p style={{fontSize:13,margin:'0 0 6px',opacity:.8}}>أكمل مهام كل درس لتفتح الدرس التالي 🔓</p>
+  {dr&&<div className="modal" onClick={()=>setDr(false)}><div className="drawer" onClick={e=>e.stopPropagation()}><h2 style={{margin:'0 0 4px'}}>اختر الدرس 📚</h2><p style={{fontSize:13,margin:'0 0 6px',opacity:.8}}>{gated?'الدرس الجديد يفتحه المدرب في الحصة 🔓':'أكمل مهام كل درس لتفتح الدرس التالي 🔓'}</p>
    {LN.map((n,k)=>{const first=STEPS.findIndex(x=>x.L===k),last=STEPS.map(x=>x.L).lastIndexOf(k),cur=s&&s.L===k;
     const lk2=lockK(k);return <button key={k} disabled={lk2} style={lk2?{opacity:.55}:null} className={'lrow'+(cur?' on':'')} onClick={()=>{setI(first);setDr(false)}}><span>{lk2?'🔒':i>last?'✅':cur?'▶️':'⭕'}</span><span>الدرس {k+1}</span><span className="en">{n}</span></button>})}
    <button className="btn alt" onClick={()=>setDr(false)}>إغلاق</button></div></div>}
